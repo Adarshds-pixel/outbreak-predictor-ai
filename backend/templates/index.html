@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Outbreak Predictor</title>
+    <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+        .section-title {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+
+        .grid-3 {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .wrapper {
+            width: 90%;
+            max-width: 1100px;
+            margin: auto;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-title">Outbreak Predictor</div>
+
+    <div class="nav-links">
+        <a class="active" href="/">Predict</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/how-it-works">How It Works</a>
+    </div>
+</div>
+
+<div class="wrapper">
+
+    <h1>Water-Borne & Infectious Disease Outbreak Prediction</h1>
+
+    <div class="card">
+
+        <!-- WATER QUALITY -->
+        <div class="section-title">💧 Water Quality Parameters</div>
+
+        <div class="grid-3">
+            <input id="ph_level" placeholder="pH Level (0–14)">
+            <input id="turbidity" placeholder="Turbidity (NTU)">
+            <input id="contamination_index" placeholder="Contamination Index (0–1)">
+            <input id="tds" placeholder="TDS (ppm)">
+            <input id="water_temperature" placeholder="Water Temperature (°C)">
+        </div>
+
+        <!-- ENVIRONMENT -->
+        <div class="section-title">🌦️ Environmental Parameters</div>
+
+        <div class="grid-3">
+            <input id="temperature" placeholder="Temperature (°C)">
+            <input id="humidity" placeholder="Humidity (%)">
+            <input id="rainfall" placeholder="Rainfall (mm)">
+        </div>
+
+        <!-- EPIDEMIOLOGY -->
+        <div class="section-title">🧬 Epidemiological Data</div>
+
+        <div class="grid-3">
+            <input id="population_density" placeholder="Population Density">
+            <input id="cases_last_week" placeholder="Cases Last Week">
+            <input id="social_sentiment" placeholder="Social Sentiment (-1 to 1)">
+            <input id="resource_utilization" placeholder="Resource Utilization (0–1)">
+        </div>
+
+        <button class="btn" onclick="predict()">Predict Risk</button>
+
+        <div id="result"></div>
+        <div id="safety"></div>
+        <div id="explanation"></div>
+
+
+    </div>
+</div>
+
+<script>
+async function predict() {
+
+    const payload = {
+        temperature: parseFloat(temperature.value),
+        humidity: parseFloat(humidity.value),
+        rainfall: parseFloat(rainfall.value),
+
+        population_density: parseFloat(population_density.value),
+        cases_last_week: parseFloat(cases_last_week.value),
+        social_sentiment: parseFloat(social_sentiment.value),
+        resource_utilization: parseFloat(resource_utilization.value),
+
+        ph_level: parseFloat(ph_level.value),
+        turbidity: parseFloat(turbidity.value),
+        contamination_index: parseFloat(contamination_index.value),
+        tds: parseFloat(tds.value),
+        water_temperature: parseFloat(water_temperature.value)
+    };
+
+    if (Object.values(payload).some(v => Number.isNaN(v))) {
+        result.innerHTML = `<div class="alert-high">❗ Please enter ALL 12 values.</div>`;
+        return;
+    }
+
+    const res = await fetch("/predict", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+    });
+
+    const out = await res.json();
+
+    result.innerHTML = `
+        <div class="alert-${out.prediction.toLowerCase()}">
+            Predicted Risk Level: <b>${out.prediction}</b>
+        </div>
+    `;
+    if (out.safety) {
+    safety.innerHTML = `
+        <div class="explanation-card">
+            <b>Safety Measures:</b>
+            <ul class="explanation-list">
+                ${out.safety.map(s => `<li>${s}</li>`).join("")}
+            </ul>
+        </div>
+    `;
+}
+
+
+    if (out.explanation) {
+        explanation.innerHTML = `
+            <div class="explanation-card">
+                <b>Why this prediction?</b>
+                <ul class="explanation-list">
+                    ${out.explanation.map(e => `<li>${e}</li>`).join("")}
+                </ul>
+            </div>
+        `;
+    }
+}
+</script>
+
+</body>
+</html>

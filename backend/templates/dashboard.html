@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        h1 {
+            text-align: center;
+            color: var(--accent);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        }
+
+        .chart-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-card:hover {
+            border-color: var(--accent);
+        }
+
+        h3 {
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .wrapper {
+            width: 90%;
+            max-width: 1200px;
+            margin: 40px auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-title">Dashboard</div>
+
+    <div class="nav-links">
+        <a href="/">Predict</a>
+        <a class="active" href="/dashboard">Dashboard</a>
+        <a href="/how-it-works">How It Works</a>
+    </div>
+</div>
+
+<div class="wrapper">
+
+    <h1>Real-Time Outbreak Monitoring Dashboard</h1>
+
+    <div class="dashboard-grid">
+
+        <!-- Risk Pie Chart -->
+        <div class="chart-card">
+            <h3>Risk Distribution</h3>
+            <canvas id="riskPie"></canvas>
+        </div>
+
+        <!-- Feature Importance -->
+        <div class="chart-card">
+            <h3>Feature Importance</h3>
+            <canvas id="featureBar"></canvas>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="chart-card">
+            <h3>7-Day Outbreak Trend</h3>
+            <canvas id="riskTrend"></canvas>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+async function loadStats() {
+    const res = await fetch("/stats");
+    const data = await res.json();
+
+    /* Risk Pie */
+    new Chart(riskPie, {
+        type: "pie",
+        data: {
+            labels: ["Low", "Medium", "High"],
+            datasets: [{
+                data: data.risk_counts || [33, 33, 34],
+                backgroundColor: ["#2ecc71", "#f1c40f", "#e74c3c"]
+            }]
+        }
+    });
+
+    /* Feature Importance */
+    new Chart(featureBar, {
+        type: "bar",
+        data: {
+            labels: Object.keys(data.feature_importance),
+            datasets: [{
+                data: Object.values(data.feature_importance),
+                backgroundColor: varAccent()
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    /* Trend Line */
+    new Chart(riskTrend, {
+        type: "line",
+        data: {
+            labels: data.weekly_data.map((_, i) => `Day ${i+1}`),
+            datasets: [{
+                data: data.weekly_data,
+                borderColor: varAccent(),
+                borderWidth: 3,
+                tension: 0.35,
+                fill: false
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    min: 0, max: 3,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+}
+
+function varAccent() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+}
+
+loadStats();
+</script>
+
+</body>
+</html>
